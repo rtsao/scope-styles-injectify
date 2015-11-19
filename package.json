@@ -1,0 +1,17 @@
+{
+  "name": "scope-stylesify",
+  "version": "0.0.0",
+  "description": "Browserify transform to automatically scope-styles your style objects",
+  "author": "Ryan Tsao <ryan.j.tsao@gmail.com>",
+  "main": "index.js",
+  "homepage": "https://github.com/rtsao/scope-stylesify",
+  "repository": "git@github.com:rtsao/scope-stylesify.git",
+  "bugs": "https://github.com/rtsao/scope-stylesify/issues",
+  "dependencies": {
+    "require-from-string": "^1.1.0",
+    "scope-styles": "https://github.com/rtsao/scope-styles/tarball/master",
+    "scope-styles-inject": "https://github.com/rtsao/scope-styles-inject/tarball/master",
+    "through2": "^2.0.0"
+  },
+  "license": "MIT"
+}
