@@ -1,6 +1,8 @@
 'use strict';
 
 var through = require('through2');
+var acorn = require('acorn');
+var falafel = require('falafel');
 var requireFromString = require('require-from-string');
 var cssKey = require('scope-styles/lib/css-symbol');
 
@@ -8,9 +10,9 @@ module.exports = function (filename, opts) {
   var extension = '.style.js';
   var runtime = false;
 
-  if (!matchesExtension(filename, extension)) {
-    return through();
-  }
+  // if (!matchesExtension(filename, extension)) {
+  //   return through();
+  // }
 
   var output = through(function(buf, enc, next) {
     var source = buf.toString('utf8');
@@ -53,7 +55,7 @@ function walkAst(source, walkFn) {
  */
 
 function transformRuntime(source, filename) {
-  return walkAst(source, swapScopeStyles);
+  return walkAst(source, swapScopeStyles).toString();
 }
 
 var regex = /(['"`])scope-styles\1/;
@@ -74,9 +76,12 @@ function swapScopeStyles(node) {
  */
 
 function transformBuildtime(source, filename) {
-  // var instrumentedModule = walkAst(source, instrumentedModule);
-  var instrumentedModule = source + ';module.exports[require("scope-styles/lib/css-symbol")] = "stuff";'
+  var instrumentedModule =
+    "var _noConflictScopeStylesResultCss;\n" +
+    walkAst(source, instrumentModule) +
+    ';module.exports[require("scope-styles/lib/css-symbol")] = _noConflictScopeStylesResultCss ? _noConflictScopeStylesResultCss.join("\\n") : "";';
   var css = requireFromString(instrumentedModule)[cssKey];
+  var css = '"' + css.replace(/\n/g, '\\\n\\n') +  '"';
   return source + ';require("insert-css")(' + css + ');';
 }
 
@@ -85,7 +90,20 @@ function instrumentModule(node) {
     // handle possible scope styles action
   } else if (isRequireScopeStyles(node)) {
     if (node.arguments[0].value === 'scope-styles') {
-      // handle stuff
+
+      node.update([
+        'function(){',
+          '"ah"',
+          'var _actualScopeStyles = require("scope-styles");',
+          'var wtf = _actualScopeStyles.apply(null, arguments);',
+          '_noConflictScopeStylesResultCss = _noConflictScopeStylesResultCss || [];',
+          '_noConflictScopeStylesResultCss.push(_actualScopeStyles.getCss(wtf));',
+          'return wtf;',
+        '}'
+      ].join('\n'));
+      // node.parent.parent.update('/* istanbul ignore next */\n' + node.parent.parent.source());
+
+
     }
   }
 }
