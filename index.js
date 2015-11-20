@@ -6,7 +6,7 @@ var cssKey = require('scope-styles/lib/css-symbol');
 
 module.exports = function (filename, opts) {
   var extension = '.style.js';
-  var runtime = true;
+  var runtime = false;
 
   if (!matchesExtension(filename, extension)) {
     return through();
