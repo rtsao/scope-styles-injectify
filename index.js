@@ -5,18 +5,16 @@ var acorn = require('acorn');
 var falafel = require('falafel');
 var requireFromString = require('require-from-string');
 var cssKey = require('scope-styles/lib/css-symbol');
+var extend = require('xtend');
 
 module.exports = function (filename, opts) {
-  var extension = '.style.js';
-  var runtime = false;
-
-  // if (!matchesExtension(filename, extension)) {
-  //   return through();
-  // }
+  opts = extend({
+    runtime: false
+  }, opts);
 
   var output = through(function(buf, enc, next) {
     var source = buf.toString('utf8');
-    var transformer = runtime ? transformRuntime : transformBuildtime;
+    var transformer = opts.runtime ? transformRuntime : transformBuildtime;
 
     try {
       var transformedSource = transformer(source, filename);
@@ -76,35 +74,25 @@ function swapScopeStyles(node) {
  */
 
 function transformBuildtime(source, filename) {
-  var instrumentedModule =
-    "var _noConflictScopeStylesResultCss;\n" +
-    walkAst(source, instrumentModule) +
-    ';module.exports[require("scope-styles/lib/css-symbol")] = _noConflictScopeStylesResultCss ? _noConflictScopeStylesResultCss.join("\\n") : "";';
-  var css = requireFromString(instrumentedModule)[cssKey];
+
+  var instrumentedModule = walkAst(source, instrumentModule) + 
+    ';module.exports[require("scope-styles/lib/css-symbol")] = require("scope-stylesify/instrumented").getCss(__filename);';
+  var css = requireFromString(instrumentedModule, filename)[cssKey];
+  if (!css) {
+    return source;
+  }
   var css = '"' + css.replace(/\n/g, '\\\n\\n') +  '"';
   return source + ';require("insert-css")(' + css + ');';
 }
 
 function instrumentModule(node) {
   if (node.type === 'ImportDeclaration') {
-    // handle possible scope styles action
+    // TODO
   } else if (isRequireScopeStyles(node)) {
-    if (node.arguments[0].value === 'scope-styles') {
-
-      node.update([
-        'function(){',
-          '"ah"',
-          'var _actualScopeStyles = require("scope-styles");',
-          'var wtf = _actualScopeStyles.apply(null, arguments);',
-          '_noConflictScopeStylesResultCss = _noConflictScopeStylesResultCss || [];',
-          '_noConflictScopeStylesResultCss.push(_actualScopeStyles.getCss(wtf));',
-          'return wtf;',
-        '}'
-      ].join('\n'));
-      // node.parent.parent.update('/* istanbul ignore next */\n' + node.parent.parent.source());
-
-
-    }
+    var quote = node.arguments[0].raw[0][0];
+    var str = quote + 'scope-stylesify/instrumented' + quote;
+    node.arguments[0].update(str);
+    node.update(node.source() + '.instrument(__filename)');
   }
 }
 
