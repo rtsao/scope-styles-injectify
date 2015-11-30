@@ -34,35 +34,16 @@ module.exports = function (filename, opts) {
   return output;
 };
 
-function matchesExtension(filename, extension) {
-  var start = filename.length - extension.length;
-  var end = filename.length;
-  return filename.substring(start, end) === extension;
-}
-
-function walkAst(source, walkFn) {
-  return falafel(source, {
-    parser: acorn,
-    ecmaVersion: 6,
-    sourceType: 'module'
-  }, walkFn);
-}
-
 /*
  * Runtime Transformation
  */
 
 function transformRuntime(source, filename) {
-  return walkAst(source, swapScopeStyles).toString();
+  return transformAst(source, swapScopeStyles);
 }
 
-var regex = /(['"`])scope-styles\1/;
-
 function swapScopeStyles(node) {
-  if (node.type === 'ImportDeclaration') {
-    node.update(node.source().replace(regex,
-      '$1scope-styles-injectify/scope-styles-inject$1'));
-  } else if (isRequireScopeStyles(node)) {
+  if (isRequireScopeStyles(node)) {
     var quote = node.arguments[0].raw[0][0];
     var str = quote + 'scope-styles-injectify/scope-styles-inject' + quote;
     node.arguments[0].update(str);
@@ -74,31 +55,41 @@ function swapScopeStyles(node) {
  */
 
 function transformBuildtime(source, filename) {
-
-  var instrumentedModule = walkAst(source, instrumentModule) + 
-    ';module.exports[require("scope-styles/lib/css-symbol")] = require("scope-stylesify/instrumented").getCss(__filename);';
-  var css = requireFromString(instrumentedModule, filename)[cssKey];
-  if (!css) {
-    return source;
-  }
-  var css = '"' + css.replace(/\n/g, '\\\n\\n') +  '"';
-  return source + ';require("insert-css")(' + css + ');';
+  var didInstrument = false;
+  var instrumentedModule = transformAst(source, function instrumentModule(node) {
+    if (isRequireScopeStyles(node)) {
+      var quote = node.arguments[0].raw[0][0];
+      var str = quote + 'scope-stylesify/instrumented' + quote;
+      node.arguments[0].update(str);
+      node.update(node.source() + '.instrument(__filename)');
+      didInstrument = true;
+    }
+  });
+  return didInstrument ? addBuildtimeCss(source, instrumentedModule, filename) : source;
 }
 
-function instrumentModule(node) {
-  if (node.type === 'ImportDeclaration') {
-    // TODO
-  } else if (isRequireScopeStyles(node)) {
-    var quote = node.arguments[0].raw[0][0];
-    var str = quote + 'scope-stylesify/instrumented' + quote;
-    node.arguments[0].update(str);
-    node.update(node.source() + '.instrument(__filename)');
-  }
+function addBuildtimeCss(original, instrumented, filename) {
+  var css = getCss(instrumented, filename);
+  return original + ';require("insert-css")(' + JSON.stringify(css) + ');';
+}
+
+var exporter = ';module.exports[require("scope-styles/lib/css-symbol")] = require("scope-stylesify/instrumented").getCss(__filename);';
+
+function getCss(instrumentedModule, filename) {
+  return requireFromString(instrumentedModule + exporter, filename)[cssKey];
 }
 
 /*
  * General AST Helpers
  */
+
+function transformAst(source, walkFn) {
+  return falafel(source, {
+    parser: acorn,
+    ecmaVersion: 6,
+    sourceType: 'module'
+  }, walkFn).toString();
+}
 
 function isRequireScopeStyles(node) {
   return node.callee &&
