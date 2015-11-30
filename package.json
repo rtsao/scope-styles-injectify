@@ -1,12 +1,12 @@
 {
-  "name": "scope-stylesify",
+  "name": "scope-styles-injectify",
   "version": "0.0.0",
-  "description": "Browserify transform to automatically scope-styles your style objects",
+  "description": "Browserify transform to automatically inject the scoped css from scope-styles into the page",
   "author": "Ryan Tsao <ryan.j.tsao@gmail.com>",
   "main": "index.js",
-  "homepage": "https://github.com/rtsao/scope-stylesify",
-  "repository": "git@github.com:rtsao/scope-stylesify.git",
-  "bugs": "https://github.com/rtsao/scope-stylesify/issues",
+  "homepage": "https://github.com/rtsao/scope-styles-injectify",
+  "repository": "git@github.com:rtsao/scope-styles-injectify.git",
+  "bugs": "https://github.com/rtsao/scope-styles-injectify/issues",
   "dependencies": {
     "acorn": "^2.6.4",
     "falafel": "^1.2.0",
