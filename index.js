@@ -15,13 +15,11 @@ module.exports = function (filename, opts) {
   var output = through(function(buf, enc, next) {
     var source = buf.toString('utf8');
     var transformer = opts.runtime ? transformRuntime : transformBuildtime;
-
     try {
       var transformedSource = transformer(source, filename);
     } catch (err) {
       return error(err);
     }
-
     this.push(transformedSource);
     next();
   });
@@ -59,7 +57,7 @@ function transformBuildtime(source, filename) {
   var instrumentedModule = transformAst(source, function instrumentModule(node) {
     if (isRequireScopeStyles(node)) {
       var quote = node.arguments[0].raw[0][0];
-      var str = quote + 'scope-stylesify/instrumented' + quote;
+      var str = quote + 'scope-styles-injectify/instrumented' + quote;
       node.arguments[0].update(str);
       node.update(node.source() + '.instrument(__filename)');
       didInstrument = true;
@@ -73,7 +71,7 @@ function addBuildtimeCss(original, instrumented, filename) {
   return original + ';require("insert-css")(' + JSON.stringify(css) + ');';
 }
 
-var exporter = ';module.exports[require("scope-styles/lib/css-symbol")] = require("scope-stylesify/instrumented").getCss(__filename);';
+var exporter = ';module.exports[require("scope-styles/lib/css-symbol")] = require("scope-styles-injectify/instrumented").getCss(__filename);';
 
 function getCss(instrumentedModule, filename) {
   return requireFromString(instrumentedModule + exporter, filename)[cssKey];
