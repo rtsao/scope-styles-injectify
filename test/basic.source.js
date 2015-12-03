@@ -1,7 +1,10 @@
 'use strict';
 
-module.exports = {
+var scopeStyles = require('scope-styles');
+
+var scoped = scopeStyles({
   foo: {
-    color: 'red'
+    color: 'red',
+    background: typeof window === 'undefined' ? 'blue' : 'green'
   }
-};
+});
