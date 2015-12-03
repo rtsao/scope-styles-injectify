@@ -1,6 +1,7 @@
 # scope-styles-injectify
 
 [![build status][build-badge]][build-href]
+[![coverage status][coverage-badge]][coverage-href]
 [![dependencies status][deps-badge]][deps-href]
 
 Browserify transform to automatically inject the scoped css from [scope-styles](https://github.com/rtsao/scope-styles) into the page
@@ -32,5 +33,7 @@ b.bundle();
 
 [build-badge]: https://travis-ci.org/rtsao/scope-styles-injectify.svg?branch=master
 [build-href]: https://travis-ci.org/rtsao/scope-styles-injectify
+[coverage-badge]: https://coveralls.io/repos/rtsao/scope-styles-injectify/badge.svg?branch=master&service=github
+[coverage-href]: https://coveralls.io/github/rtsao/scope-styles-injectify?branch=master
 [deps-badge]: https://david-dm.org/rtsao/scope-styles-injectify.svg
 [deps-href]: https://david-dm.org/rtsao/scope-styles-injectify
