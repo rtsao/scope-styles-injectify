@@ -4,4 +4,4 @@ node_js:
   - "0.12"
   - "4.2"
   - "5.1"
-script: npm run test
+script: npm run travis-test
