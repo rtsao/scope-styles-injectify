@@ -75,6 +75,7 @@ var exporter = ';module.exports[require("scope-styles/lib/css-symbol")] = requir
 
 function getCss(instrumentedModule, filename) {
   return requireFromString(instrumentedModule + exporter, filename)[cssKey];
+  return stuff;
 }
 
 /*

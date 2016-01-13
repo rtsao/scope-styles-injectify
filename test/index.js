@@ -1,56 +1,77 @@
 'use strict';
 
+require('exit-code');
+
 var fs = require('fs');
 var browserify = require('browserify');
 var through2 = require('through2');
 var multistream = require('multistream');
+var reduce = require('stream-reduce');
 var run = require('tape-run');
+var merge = require('tap-merge');
+
 var transform = require('../');
 
 var tests = [
   {
-    name: 'basic-runtime',
+    fixture: 'basic-runtime',
     opts: {runtime: true}
   },
   {
-    name: 'basic-buildtime',
-    opts: {runtime: true}
+    fixture: 'basic-buildtime',
+    opts: {runtime: false}
   }
-];
+].map(addStream);
 
-var runner = run();
-runner.on('results', function(results) {
-  if (!results.ok) {
-    process.exit(1);
-  }
-});
-runner.pipe(process.stdout);
+var results = tests.map(testFromConfig);
+multistream(results)
+  .pipe(reduce(reduceResult, true))
+  .on('data', function(didPass) {
+    process.exitCode = didPass ? 0 : 1;
+  });
 
-var testStreams = tests.map(function() {
-  return through2();
-});
-var tapeStream = through2();
-var outputStream = multistream([tapeStream].concat(testStreams));
-outputStream.pipe(runner);
-
-bundleTape();
-tests.forEach(testFromConfig);
+var testStreams = tests.map(getStream);
+multistream(testStreams)
+  .pipe(merge())
+  .pipe(process.stdout);
 
 function testFromConfig(config, index) {
-  var testPath = './test/' + config.name + '.js';
-  runBrowserify(testPath, config.opts, testStreams[index]);
+  var fixturePath =  config.fixture + '.js';
+  var testPath =  config.fixture + '.test.js';
+
+  var runner = run();
+
+  var resultStream = through2();
+
+  runner.pipe(config.stream);
+  runner.on('results', function(a) {
+    resultStream.push(a.ok ? 'pass' : 'fail');
+    resultStream.push(null);
+  });
+
+  runBrowserify(testPath, fixturePath, config.opts)
+    .pipe(runner);
+
+  return resultStream;
 }
 
-function bundleTape() {
-  var b = browserify();
-  b.require('tape');
-  b.bundle().pipe(tapeStream);
-}
-
-function runBrowserify(sourcePath, transformOpts, output) {
-  var b = browserify(sourcePath);
-  b.external('tape');
+function runBrowserify(sourcePath, fixturePath, transformOpts) {
+  var b = browserify('./test/' + sourcePath);
   b.transform(transform, transformOpts);
   b.transform('brfs');
-  b.bundle().pipe(output);
+  return b.bundle();
+}
+
+function addStream(test) {
+  test.stream = through2();
+  return test;
+}
+
+function getStream(test) {
+  return test.stream;
+}
+
+function reduceResult(acc, data) {
+  console.log(acc, data.toString());
+  return acc && data.toString() === 'pass';
 }
