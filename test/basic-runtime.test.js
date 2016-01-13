@@ -5,7 +5,7 @@ require('./basic');
 var fs = require('fs');
 var test = require('tape');
 
-var expectedCss = fs.readFileSync(__dirname + '/basic.expected.css', 'utf8');
+var expectedCss = fs.readFileSync(__dirname + '/basic-runtime.expected.css', 'utf8');
 
 test('basic runtime', function t(assert) {
   var style = document.querySelector('style');

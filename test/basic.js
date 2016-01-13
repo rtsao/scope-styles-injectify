@@ -2,9 +2,12 @@
 
 var scopeStyles = require('scope-styles');
 
+var isBuildtime = typeof window === 'undefined';
+
 var styles = {
   foo: {
-    color: 'red'
+    color: 'red',
+    content: isBuildtime ? '"buildtime"' : '"runtime"'
   }
 };
 
