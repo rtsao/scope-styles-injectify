@@ -24,7 +24,7 @@
     "browserify": "^12.0.1",
     "exit-code": "^1.0.2",
     "multistream": "^2.0.2",
-    "stream-reduce": "^1.0.3",
+    "tap-finished": "0.0.1",
     "tap-merge": "^0.3.1",
     "tape": "^4.2.2",
     "tape-run": "^2.1.0"

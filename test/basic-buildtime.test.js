@@ -11,6 +11,5 @@ test('basic buildtime', function t(assert) {
   var style = document.querySelector('style');
   assert.ok(style, 'style tag exists');
   assert.equal(style.textContent, expectedCss, 'css should match expected');
-  assert.ok(false);
   assert.end();
 });

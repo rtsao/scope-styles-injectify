@@ -6,9 +6,9 @@ var fs = require('fs');
 var browserify = require('browserify');
 var through2 = require('through2');
 var multistream = require('multistream');
-var reduce = require('stream-reduce');
 var run = require('tape-run');
 var merge = require('tap-merge');
+var finished = require('tap-finished');
 
 var transform = require('../');
 
@@ -23,36 +23,27 @@ var tests = [
   }
 ].map(addStream);
 
-var results = tests.map(testFromConfig);
-multistream(results)
-  .pipe(reduce(reduceResult, true))
-  .on('data', function(didPass) {
-    process.exitCode = didPass ? 0 : 1;
-  });
+tests.forEach(testFromConfig);
 
-var testStreams = tests.map(getStream);
-multistream(testStreams)
+var output = multistream(tests.map(getStream))
   .pipe(merge())
-  .pipe(process.stdout);
+  .pipe(through2());
+
+output.pipe(finished(function setExitCode(result) {
+  process.exitCode = result.ok ? 0 : 1;
+}));
+
+output.pipe(process.stdout);
 
 function testFromConfig(config, index) {
   var fixturePath =  config.fixture + '.js';
   var testPath =  config.fixture + '.test.js';
 
   var runner = run();
-
-  var resultStream = through2();
-
   runner.pipe(config.stream);
-  runner.on('results', function(a) {
-    resultStream.push(a.ok ? 'pass' : 'fail');
-    resultStream.push(null);
-  });
 
   runBrowserify(testPath, fixturePath, config.opts)
     .pipe(runner);
-
-  return resultStream;
 }
 
 function runBrowserify(sourcePath, fixturePath, transformOpts) {
